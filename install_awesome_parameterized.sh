@@ -16,9 +16,15 @@ source $1/my_configs.vim
 catch
 endtry"
 
+<<<<<<< HEAD
 if [ "$2" = "--all" ]; then
     USERS=$(ls -l /home | awk '{if(NR>1)print $9}')
     for user in $USERS; do
+=======
+if [ $2 == "--all" ]; then
+    USERS=($(ls -l /home | awk '{if(NR>1)print $9}'))
+    for user in ${USERS[*]}; do
+>>>>>>> 89b37df (feat(vim_runtime): add latex config plug)
         homepath=$(eval echo "~$user")
         IFS=''
         echo $VIMRC > ${homepath}/.vimrc
@@ -28,9 +34,15 @@ if [ "$2" = "--all" ]; then
     echo "Installed the Ultimate Vim configuration successfully! Enjoy :-)"
     exit 0
 else
+<<<<<<< HEAD
     SELECTED_USERS=${@:2}
     echo "Selected users: $SELECTED_USERS"
     for user in $SELECTED_USERS; do
+=======
+    SELECTED_USERS=(${@:2})
+    echo "Selected users: ${SELECTED_USERS[@]}"
+    for user in ${SELECTED_USERS[@]}; do
+>>>>>>> 89b37df (feat(vim_runtime): add latex config plug)
         homepath=$(eval echo "~$user")
         IFS=''
         echo $VIMRC > ${homepath}/.vimrc

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b40107a1-08a3-408c-8cc1-bbac8a8a4cfe" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/autoload/plug.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coc-settings.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/my_configs.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/ale/ale_linters/c/clang.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/ale/ale_linters/c/gcc.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/ale/ale_linters/cpp/clang.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/ale/ale_linters/cpp/gcc.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/mru.vim/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/mru.vim/plugin/mru.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/vim-gitgutter/unplace.vim" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/vim-ruby/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/vim-snipmate/doc/SnipMate.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/vim-snippets/snippets/javascript-es6-react.snippets" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sources_non_forked/vim-snippets/snippets/javascript/javascript-jasmine.snippets" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ProjectId" id="1qxJN74tijIThld02HXWCMCo3r5" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="configurable.GoLibrariesConfigurable.is.expanded" value="true" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="settings.editor.selected.configurable" value="go.sdk" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+</project>
