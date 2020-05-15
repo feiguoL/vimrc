@@ -30,9 +30,25 @@ endif
   set         nospell
   syntax      on
   set         foldenable
-  set         foldlevel=1
+  set         foldlevel=3
   "set        foldclose=all
   set         foldmethod=indent
+
+ " Copy and paste
+ if has('clipboard') && !has('gui_running')
+  set clipboard^=unnamed,unnamedplus
+ endif
+  map <C-a> ggVG
+  vmap <C-x> "+c
+  vmap <C-v> c<ESC>"+p
+  imap <C-v> <ESC>"+pa
+ " Open a new instance of st with the cwd
+ nnoremap \t :tabe<CR>:-tabmove<CR>:term sh -c 'st'<CR><C-\><C-N>:q<CR>
+ noremap <leader>/ :set splitbelow<CR>:split<CR>:res -10<CR>:term<CR>
+
+
+ " Open up lazygit
+ noremap <leader>lg :tabe<CR>:-tabmove<CR>:te lazygit<CR>
 
 " }
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""    
@@ -104,10 +120,14 @@ endfunc
  map <leader>vs : vs<CR>
  nmap Q         : q<CR>
  nmap S         : wq!<CR>
+ nmap W         : W<CR> : q<CR>
+ 
 
  " Compile function
  noremap \ll : call CompileRunGcc()<CR>
  noremap \lc : call CompileClean()<CR>
+ 
+ let g:snipMate = { 'snippet_version' : 1 }
 
 " }
 
@@ -123,6 +143,7 @@ endfunc
  Plug 'neoclide/coc.nvim', {'branch': 'release'}
  Plug 'tpope/vim-fugitive'
  Plug 'lervag/vimtex'
+ Plug 'ryanoasis/vim-devicons'
  Plug 'xuhdev/vim-latex-live-preview', { 'for': 'tex' }
 
  call plug#end()
@@ -151,6 +172,10 @@ endfunc
  endif
 
 " NerdTree
+ set encoding=utf8
+ set guifont=DroidSansMono_Nerd_Font:h11
+ let NERDTreeMinimalUI                     = 1
+ let NERDTreeDirArrows                     = 1
  let NERDTreeWinPos                        = 'left'
  let NERDTreeShowHidden                    = 1
  let nerdtree_tabs_open_on_gui_startup     = 0
@@ -181,6 +206,7 @@ endfunc
 
 " coc nvim
  if isdirectory(expand("~/.vim/bundle/coc.nvim"))
+     let g:coc_disable_startup_warning = 1
      " if hidden is not set, TextEdit might fail.
      set hidden
      " Some servers have issues with backup files, see #649
@@ -313,6 +339,5 @@ endfunc
      nnoremap <silent> <leader>gi :Git add -p %<CR>
      nnoremap <silent> <leader>gg :SignifyToggle<CR>
  endif
-
 
 " }

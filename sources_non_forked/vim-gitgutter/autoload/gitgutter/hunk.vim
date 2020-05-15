@@ -257,6 +257,7 @@ function! s:hunk_op(op, ...)
     let g:gitgutter_async = async
 
     call gitgutter#hunk#set_hunks(bufnr, gitgutter#diff#parse_diff(diff))
+    call gitgutter#diff#process_hunks(bufnr, gitgutter#hunk#hunks(bufnr))  " so the hunk summary is updated
 
     if empty(s:current_hunk())
       call gitgutter#utility#warn('cursor is not in a hunk')
@@ -440,16 +441,24 @@ function! s:open_hunk_preview_window()
 
       " Assumes cursor is in original window.
       autocmd CursorMoved <buffer> ++once call s:close_hunk_preview_window()
+      if g:gitgutter_close_preview_on_escape
+        nnoremap <buffer> <silent> <Esc> :call <SID>close_hunk_preview_window()<CR>
+      endif
 
       return
     endif
 
     if exists('*popup_create')
-      let s:winid = popup_create('', {
+      let opts = {
             \ 'line': 'cursor+1',
             \ 'col': 'cursor',
             \ 'moved': 'any',
-            \ })
+            \ }
+      if g:gitgutter_close_preview_on_escape
+        let opts.filter = function('s:close_popup_on_escape')
+      endif
+
+      let s:winid = popup_create('', opts)
 
       call setbufvar(winbufnr(s:winid), '&filetype', 'diff')
 
@@ -457,14 +466,12 @@ function! s:open_hunk_preview_window()
     endif
   endif
 
+  " Specifying where to open the preview window can lead to the cursor going
+  " to an unexpected window when the preview window is closed (#769).
+  noautocmd execute g:gitgutter_preview_win_location 'pedit gitgutter://hunk-preview'
   silent! wincmd P
-  if &previewwindow
-    file gitgutter://hunk-preview
-  else
-    noautocmd execute g:gitgutter_preview_win_location &previewheight 'new gitgutter://hunk-preview'
-    doautocmd WinEnter
-    set previewwindow
-  endif
+  setlocal statusline=%{''}
+  doautocmd WinEnter
   if exists('*win_getid')
     let s:winid = win_getid()
   else
@@ -474,8 +481,18 @@ function! s:open_hunk_preview_window()
   " Reset some defaults in case someone else has changed them.
   setlocal noreadonly modifiable noswapfile
   if g:gitgutter_close_preview_on_escape
-    nnoremap <buffer> <silent> <Esc> :pclose<CR>
+    " Ensure cursor goes to the expected window.
+    nnoremap <buffer> <silent> <Esc> :<C-U>wincmd p<Bar>pclose<CR>
   endif
+endfunction
+
+
+function! s:close_popup_on_escape(winid, key)
+  if a:key == "\<Esc>"
+    call popup_close(a:winid)
+    return 1
+  endif
+  return 0
 endfunction
 
 

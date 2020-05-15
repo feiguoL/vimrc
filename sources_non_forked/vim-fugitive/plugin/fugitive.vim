@@ -22,6 +22,8 @@ function! FugitiveGitDir(...) abort
     return getbufvar(a:1, 'git_dir')
   elseif type(a:1) == type('')
     return substitute(s:Slash(a:1), '/$', '', '')
+  elseif type(a:1) == type({})
+    return get(a:1, 'git_dir', '')
   else
     return ''
   endif
@@ -94,25 +96,26 @@ function! FugitivePrepare(...) abort
 endfunction
 
 function! FugitiveConfig(...) abort
-  if a:0 == 2 && type(a:2) != type({})
+  if a:0 == 2 && (type(a:2) != type({}) || has_key(a:2, 'git_dir'))
     return fugitive#Config(a:1, FugitiveGitDir(a:2))
-  elseif a:0 == 1 && a:1 !~# '^[[:alnum:]-]\+\.'
+  elseif a:0 == 1 && (type(a:1) !=# type('') || a:1 !~# '^[[:alnum:]-]\+\.')
     return fugitive#Config(FugitiveGitDir(a:1))
   else
     return call('fugitive#Config', a:000)
   endif
 endfunction
 
-" Retrieve a Git configuration value.  An optional second argument provides
-" the Git dir as with FugitiveFind().  Pass a blank string to limit to the
-" global config.
+" FugitiveConfigGet() retrieves a Git configuration value.  An optional second
+" argument provides the Git dir as with FugitiveFind().  Pass a blank string
+" to limit to the global config.
 function! FugitiveConfigGet(name, ...) abort
   return call('FugitiveConfig', [a:name] + a:000)
 endfunction
 
-" Like FugitiveConfigGet(), but return a list of all values.
+" FugitiveConfigGetAll() is like FugitiveConfigGet() but returns a list of
+" all values.
 function! FugitiveConfigGetAll(name, ...) abort
-  if a:0 && type(a:1) ==# type({})
+  if a:0 && type(a:1) ==# type({}) && !has_key(a:1, 'git_dir')
     let config = a:1
   else
     let config = fugitive#Config(FugitiveGitDir(a:0 ? a:1 : -1))
@@ -122,7 +125,7 @@ function! FugitiveConfigGetAll(name, ...) abort
 endfunction
 
 function! FugitiveRemoteUrl(...) abort
-  return fugitive#RemoteUrl(a:0 ? a:1 : '', FugitiveGitDir(a:0 > 1 ? a:2 : -1))
+  return fugitive#RemoteUrl(a:0 ? a:1 : '', FugitiveGitDir(a:0 > 1 ? a:2 : -1), a:0 > 2 ? a:3 : 0)
 endfunction
 
 function! FugitiveHead(...) abort
@@ -310,13 +313,15 @@ function! FugitiveGitPath(path) abort
   return s:Slash(a:path)
 endfunction
 
-function! s:Slash(path) abort
-  if exists('+shellslash')
+if exists('+shellslash')
+  function! s:Slash(path) abort
     return tr(a:path, '\', '/')
-  else
+  endfunction
+else
+  function! s:Slash(path) abort
     return a:path
-  endif
-endfunction
+  endfunction
+endif
 
 function! s:ProjectionistDetect() abort
   let file = s:Slash(get(g:, 'projectionist_file', ''))
@@ -363,27 +368,20 @@ augroup fugitive
   autocmd FileType           netrw call FugitiveDetect(fnamemodify(get(b:, 'netrw_curdir', expand('<amatch>')), ':p'))
 
   autocmd FileType git
-        \ if len(FugitiveGitDir()) |
-        \   call fugitive#MapJumps() |
-        \   call fugitive#MapCfile() |
-        \ endif
+        \ call fugitive#MapCfile()
   autocmd FileType gitcommit
-        \ if len(FugitiveGitDir()) |
-        \   call fugitive#MapCfile('fugitive#MessageCfile()') |
-        \ endif
+        \ call fugitive#MapCfile('fugitive#MessageCfile()')
   autocmd FileType git,gitcommit
-        \ if len(FugitiveGitDir()) && &foldtext ==# 'foldtext()' |
+        \ if &foldtext ==# 'foldtext()' |
         \    setlocal foldtext=fugitive#Foldtext() |
         \ endif
   autocmd FileType fugitive
-        \ if len(FugitiveGitDir()) |
-        \   call fugitive#MapCfile('fugitive#StatusCfile()') |
-        \ endif
+        \ call fugitive#MapCfile('fugitive#StatusCfile()')
   autocmd FileType gitrebase
         \ let &l:include = '^\%(pick\|squash\|edit\|reword\|fixup\|drop\|[pserfd]\)\>' |
-        \ if len(FugitiveGitDir()) |
-        \   let &l:includeexpr = 'v:fname =~# ''^\x\{4,\}$'' ? FugitiveFind(v:fname) : ' .
-        \   (len(&l:includeexpr) ? &l:includeexpr : 'v:fname') |
+        \ if &l:includeexpr !~# 'Fugitive' |
+        \   let &l:includeexpr = 'v:fname =~# ''^\x\{4,\}$'' && len(FugitiveGitDir()) ? FugitiveFind(v:fname) : ' .
+        \     (len(&l:includeexpr) ? &l:includeexpr : 'v:fname') |
         \ endif |
         \ let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setl inex= inc='
 
@@ -430,8 +428,10 @@ if exists(':Gstatus') !=# 2
 endif
 
 for s:cmd in ['Commit', 'Revert', 'Merge', 'Rebase', 'Pull', 'Push', 'Fetch', 'Blame']
-  if exists(':G' . tolower(s:cmd)) != 2
-    exe 'command! -bang -nargs=? -range=-1 -complete=customlist,fugitive#' . s:cmd . 'Complete G' . tolower(s:cmd) 'exe fugitive#Command(<line1>, <count>, +"<range>", <bang>0, "<mods>", "' . tolower(s:cmd) . ' " . <q-args>)'
+  if exists(':G' . tolower(s:cmd)) != 2 && get(g:, 'fugitive_legacy_commands', 1)
+    exe 'command! -bang -nargs=? -range=-1 -complete=customlist,fugitive#' . s:cmd . 'Complete G' . tolower(s:cmd)
+          \ 'echohl WarningMSG|echo ":G' . tolower(s:cmd) . ' is deprecated in favor of :Git ' . tolower(s:cmd) . '"|echohl NONE|'
+          \ 'exe fugitive#Command(<line1>, <count>, +"<range>", <bang>0, "<mods>", "' . tolower(s:cmd) . ' " . <q-args>)'
   endif
 endfor
 unlet s:cmd
@@ -473,22 +473,27 @@ exe 'command! -bar -bang -nargs=0 -complete=customlist,fugitive#CompleteObject G
 exe 'command! -bar -bang -nargs=0 -complete=customlist,fugitive#CompleteObject GDelete exe fugitive#DeleteCommand(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
 exe 'command! -bar -bang -nargs=1 -complete=customlist,fugitive#CompleteObject GMove   exe fugitive#MoveCommand(  <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
 exe 'command! -bar -bang -nargs=1 -complete=customlist,fugitive#RenameComplete GRename exe fugitive#RenameCommand(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
-if exists(':Gremove') != 2
+if exists(':Gremove') != 2 && get(g:, 'fugitive_legacy_commands', 1)
   exe 'command! -bar -bang -nargs=0 -complete=customlist,fugitive#CompleteObject Gremove exe fugitive#RemoveCommand(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
+        \ '|echohl WarningMSG|echo ":Gremove is deprecated in favor of :GRemove"|echohl NONE'
 endif
-if exists(':Gdelete') != 2
+if exists(':Gdelete') != 2 && get(g:, 'fugitive_legacy_commands', 1)
   exe 'command! -bar -bang -nargs=0 -complete=customlist,fugitive#CompleteObject Gdelete exe fugitive#DeleteCommand(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
+        \ '|echohl WarningMSG|echo ":Gdelete is deprecated in favor of :GDelete"|echohl NONE'
 endif
-if exists(':Gmove') != 2
+if exists(':Gmove') != 2 && get(g:, 'fugitive_legacy_commands', 1)
   exe 'command! -bar -bang -nargs=1 -complete=customlist,fugitive#CompleteObject Gmove   exe fugitive#MoveCommand(  <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
+        \ '|echohl WarningMSG|echo ":Gmove is deprecated in favor of :GMove"|echohl NONE'
 endif
-if exists(':Grename') != 2
+if exists(':Grename') != 2 && get(g:, 'fugitive_legacy_commands', 1)
   exe 'command! -bar -bang -nargs=1 -complete=customlist,fugitive#RenameComplete Grename exe fugitive#RenameCommand(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
+        \ '|echohl WarningMSG|echo ":Grename is deprecated in favor of :GRename"|echohl NONE'
 endif
 
 exe 'command! -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#CompleteObject GBrowse exe fugitive#BrowseCommand(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
-if exists(':Gbrowse') != 2
+if exists(':Gbrowse') != 2 && get(g:, 'fugitive_legacy_commands', 1)
   exe 'command! -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#CompleteObject Gbrowse exe fugitive#BrowseCommand(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>, [<f-args>])'
+        \ '|if <bang>1|redraw!|endif|echohl WarningMSG|echo ":Gbrowse is deprecated in favor of :GBrowse"|echohl NONE'
 endif
 
 if get(g:, 'fugitive_no_maps')
